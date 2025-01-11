@@ -5,18 +5,13 @@ import * as vscode from 'vscode';
 // This method is called when your extension is activated
 // Your extension is activated the very first time the command is executed
 export function activate(context: vscode.ExtensionContext) {
+	const functionDetector = new FunctionDetector();
 
-	// Use the console to output diagnostic information (console.log) and errors (console.error)
-	// This line of code will only be executed once when your extension is activated
-	console.log('Congratulations, your extension "knuth" is now active!');
+	const disposable = vscode.workspace.onDidChangeTextDocument((event) => {
+		if (event.document.languageId !== 'python') return;
+		if (!vscode.workspace.getConfiguration('knuth').get('enable')) return;
 
-	// The command has been defined in the package.json file
-	// Now provide the implementation of the command with registerCommand
-	// The commandId parameter must match the command field in package.json
-	const disposable = vscode.commands.registerCommand('knuth.helloWorld', () => {
-		// The code you place here will be executed every time your command is executed
-		// Display a message box to the user
-		vscode.window.showInformationMessage('Hello World from Knuth!');
+		functionDetector.analyze(event);
 	});
 
 	context.subscriptions.push(disposable);
@@ -24,3 +19,51 @@ export function activate(context: vscode.ExtensionContext) {
 
 // This method is called when your extension is deactivated
 export function deactivate() {}
+
+class FunctionDetector {
+	private lastAnalyzedText: string = '';
+	private functionRegex: RegExp = /def\s+([a-zA-Z_]\w*)\s*\([^)]*\)\s*:(?:\s*(?:#[^\n]*)?(?:\n\s+[^\n]+|\n\s*(?:#[^\n]*)?)*)*/g;
+	private indentationRegex: RegExp = /^[ \t]+/;
+
+	analyze(event: vscode.TextDocumentChangeEvent) {
+		const document: vscode.TextDocument = event.document;
+		const text: string = document.getText();
+
+		if (text === this.lastAnalyzedText) return;
+
+		const matches: RegExpStringIterator<RegExpExecArray> = text.matchAll(this.functionRegex);
+
+		for (const match of matches) {
+			const functionBody = match?.[0];
+
+			if (!functionBody) return;
+
+			if (this.isFunctionComplete(functionBody)) {
+				this.analyzeFunctionWithAI(functionBody, document.positionAt(match.index!));
+			}
+		}
+
+		this.lastAnalyzedText = text;
+	}
+
+	private isFunctionComplete(functionText: string): boolean {
+		const lines: Array<string> = functionText.split('\n');
+
+		if (lines.length < 2) return false;
+
+		const baseIndent = this.getIndentation(lines[1]);
+		const lastLineIndent = this.getIndentation(lines[lines.length - 1]);
+
+		return lastLineIndent <= baseIndent;
+	}
+
+	private getIndentation(line: string): number {
+		const match = line.match(this.indentationRegex);
+		
+		return match ? match[0].length : 0;
+	}
+
+	private analyzeFunctionWithAI(functionText: string, position: vscode.Position) {
+
+	}
+}
