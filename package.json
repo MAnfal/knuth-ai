@@ -16,8 +16,8 @@
   "contributes": {
     "commands": [
       {
-        "command": "knuth.helloWorld",
-        "title": "Hello World"
+        "command": "knuth.showSuggestion",
+        "title": "Show Function Suggestion"
       }
     ],
     "configuration": {

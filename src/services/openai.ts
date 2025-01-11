@@ -3,7 +3,11 @@ import OpenAI from "openai";
 export class OpenAIService {
     private client: OpenAI;
 
-    constructor(apiKey: string) {
+    constructor(apiKey: string|undefined) {
+        if (!apiKey) {
+            apiKey = "DEFAULT_KEY";
+        } 
+
         this.client = new OpenAI({ apiKey });
     }
 
